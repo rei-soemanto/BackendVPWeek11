@@ -6,7 +6,6 @@ const catchAsync = (fn: Function) => (req: Request, res: Response, next: NextFun
     Promise.resolve(fn(req, res, next)).catch(next);
 };
 
-// 1. Create new Order
 export const createOrder = catchAsync(async (req: Request, res: Response) => {
     const rawData = {
         customer_id: parseInt(req.body.customer_id),
@@ -19,7 +18,6 @@ export const createOrder = catchAsync(async (req: Request, res: Response) => {
     res.status(201).json(order);
 });
 
-// 2. Display Orders (All or Filtered)
 export const getOrders = catchAsync(async (req: Request, res: Response) => {
     const query = validation.filterOrderSchema.parse(req.query);
 
@@ -30,7 +28,6 @@ export const getOrders = catchAsync(async (req: Request, res: Response) => {
     res.json(orders);
 });
 
-// 2. Display Order by ID
 export const getOrderById = catchAsync(async (req: Request, res: Response) => {
     const orderId = parseInt(req.params.id);
     const order = await orderService.findById(orderId);

@@ -1,28 +1,29 @@
-import { prismaClient } from "../utils/database-util";
-import { ApiError } from '../errors/api-error';
+import { ApiError } from '../errors/error-api';
+import { prismaClient } from '../utils/database-util';
 import { calculateETA } from '../utils/eta-calc-util';
+import { Order, OrderCreateInput } from '../models/order-model';
 
 const prisma = prismaClient;
 
-export const create = async (data: { customer_id: number, restaurant_id: number, item_amount: number }) => {
+export const create = async (data: OrderCreateInput): Promise<Order> => {
     const { item_amount, customer_id, restaurant_id } = data;
 
     const estimated_eta = calculateETA(item_amount);
 
     try {
         const order = await prisma.order.create({
-        data: {
-            customer_id,
-            restaurant_id,
-            item_amount,
-            estimated_eta,
-        },
-        include: {
-            customer: { select: { name: true } },
-            restaurant: { select: { name: true } },
-        },
+            data: {
+                customer_id,
+                restaurant_id,
+                item_amount,
+                estimated_eta,
+            },
+            include: {
+                customer: { select: { name: true } },
+                restaurant: { select: { name: true } },
+            },
         });
-        return order;
+        return order as Order;
     } catch (error) {
         if ((error as any).code === 'P2003') {
             throw new ApiError(404, 'Customer or Restaurant ID does not exist.');
@@ -31,7 +32,7 @@ export const create = async (data: { customer_id: number, restaurant_id: number,
     }
 };
 
-export const findAll = async (customerId?: number, restaurantId?: number) => {
+export const findAll = async (customerId?: number, restaurantId?: number): Promise<Order[]> => {
     let whereClause: any = {};
 
     if (customerId) {
@@ -44,14 +45,14 @@ export const findAll = async (customerId?: number, restaurantId?: number) => {
     return prisma.order.findMany({
         where: whereClause,
         include: {
-        customer: { select: { name: true } },
-        restaurant: { select: { name: true } },
+            customer: { select: { name: true } },
+            restaurant: { select: { name: true } },
         },
         orderBy: { order_time: 'desc' },
-    });
+    }) as Promise<Order[]>;
 };
 
-export const findById = async (id: number) => {
+export const findById = async (id: number): Promise<Order> => {
     const order = await prisma.order.findUnique({
         where: { id },
         include: {
@@ -63,5 +64,5 @@ export const findById = async (id: number) => {
     if (!order) {
         throw new ApiError(404, 'Order not found.');
     }
-    return order;
+    return order as Order;
 };

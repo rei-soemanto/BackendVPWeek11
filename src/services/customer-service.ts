@@ -1,14 +1,15 @@
 import { prismaClient } from "../utils/database-util";
-import { ApiError } from '../errors/api-error';
+import { ApiError } from '../errors/error-api';
+import { Customer, CustomerCreateInput, CustomerUpdateInput } from '../models/customer-model';
 
 const prisma = prismaClient;
 
-export const create = async (data: { name: string, phone?: string }) => {
-    return prisma.customer.create({ data });
+export const create = async (data: CustomerCreateInput): Promise<Customer> => {
+    return prisma.customer.create({ data }) as Promise<Customer>;
 };
 
-export const findAll = async () => {
-    return prisma.customer.findMany();
+export const findAll = async (): Promise<Customer[]> => {
+    return prisma.customer.findMany() as Promise<Customer[]>;
 };
 
 export const findById = async (id: number) => {
@@ -19,12 +20,12 @@ export const findById = async (id: number) => {
     return customer;
 };
 
-export const update = async (id: number, data: { name?: string, phone?: string }) => {
+export const update = async (id: number, data: CustomerUpdateInput): Promise<Customer> => {
     try {
-        return await prisma.customer.update({
-        where: { id },
-        data,
-        });
+        return prisma.customer.update({
+            where: { id },
+            data,
+        }) as Promise<Customer>;
     } catch (error) {
         if ((error as any).code === 'P2025') {
             throw new ApiError(404, 'Customer not found for update.');
