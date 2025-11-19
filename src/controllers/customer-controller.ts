@@ -1,101 +1,42 @@
-import { PrismaClient } from '../../generated/prisma/client';
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
+import * as customerService from '../services/customer-service';
+import * as validation from '../validations/customer-validation';
 
-const prisma = new PrismaClient();
-
-export const createCustomer = async (req: Request, res: Response) => {
-    const { name, phone } = req.body;
-    if (!name) {
-        return res.status(400).json({ error: 'Customer name is required.' });
-    }
-
-    try {
-        const customer = await prisma.customer.create({
-        data: { name, phone },
-        });
-        res.status(201).json(customer);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to create customer.' });
-    }
-    };
-
-    export const getCustomers = async (req: Request, res: Response) => {
-    try {
-        const customers = await prisma.customer.findMany();
-        res.json(customers);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch customers.' });
-    }
-    };
-
-    export const getCustomerById = async (req: Request, res: Response) => {
-    const customerId = parseInt(req.params.id);
-    
-    try {
-        const customer = await prisma.customer.findUnique({
-        where: { id: customerId },
-        });
-
-        if (!customer) {
-        return res.status(404).json({ error: 'Customer not found.' });
-        }
-        res.json(customer);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch customer info.' });
-    }
-    };
-
-    export const updateCustomerName = async (req: Request, res: Response) => {
-    const customerId = parseInt(req.params.id);
-    const { name } = req.body;
-    if (!name) {
-        return res.status(400).json({ error: 'New name is required.' });
-    }
-
-    try {
-        const updatedCustomer = await prisma.customer.update({
-        where: { id: customerId },
-        data: { name },
-        });
-        res.json(updatedCustomer);
-    } catch (error) {
-        if ((error as any).code === 'P2025') {
-            return res.status(404).json({ error: 'Customer not found.' });
-        }
-        res.status(500).json({ error: 'Failed to update customer name.' });
-    }
-    };
-
-    export const updateCustomerPhone = async (req: Request, res: Response) => {
-    const customerId = parseInt(req.params.id);
-    const { phone } = req.body;
-    
-    try {
-        const updatedCustomer = await prisma.customer.update({
-        where: { id: customerId },
-        data: { phone },
-        });
-        res.json(updatedCustomer);
-    } catch (error) {
-        if ((error as any).code === 'P2025') {
-            return res.status(404).json({ error: 'Customer not found.' });
-        }
-        res.status(500).json({ error: 'Failed to update customer phone number.' });
-    }
-    };
-
-    export const deleteCustomer = async (req: Request, res: Response) => {
-    const customerId = parseInt(req.params.id);
-
-    try {
-        await prisma.customer.delete({
-        where: { id: customerId },
-        });
-        res.status(204).send();
-    } catch (error) {
-        if ((error as any).code === 'P2025') {
-            return res.status(404).json({ error: 'Customer not found.' });
-        }
-        res.status(500).json({ error: 'Failed to delete customer.' });
-    }
+const catchAsync = (fn: Function) => (req: Request, res: Response, next: NextFunction) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
 };
+
+// 1. Create new Customer
+export const createCustomer = catchAsync(async (req: Request, res: Response) => {
+    const data = validation.createCustomerSchema.parse(req.body);
+    const customer = await customerService.create(data);
+    res.status(201).json(customer);
+});
+
+// 2. Display Customer Info (All)
+export const getCustomers = catchAsync(async (req: Request, res: Response) => {
+    const customers = await customerService.findAll();
+    res.json(customers);
+});
+
+// 2. Display Customer Info (by ID)
+export const getCustomerById = catchAsync(async (req: Request, res: Response) => {
+    const customerId = parseInt(req.params.id);
+    const customer = await customerService.findById(customerId);
+    res.json(customer);
+});
+
+// 3. Update Customer Info (Generic update route)
+export const updateCustomer = catchAsync(async (req: Request, res: Response) => {
+    const customerId = parseInt(req.params.id);
+    const data = validation.updateCustomerSchema.parse(req.body);
+    const updatedCustomer = await customerService.update(customerId, data);
+    res.json(updatedCustomer);
+});
+
+// 4. Delete Customer
+export const deleteCustomer = catchAsync(async (req: Request, res: Response) => {
+    const customerId = parseInt(req.params.id);
+    await customerService.remove(customerId);
+    res.status(204).send();
+});

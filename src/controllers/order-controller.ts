@@ -1,86 +1,38 @@
-import { PrismaClient } from '../../generated/prisma/client';
-import { Request, Response } from 'express';
-import { calculateETA } from '../utils/eta-calc-util';
+import { Request, Response, NextFunction } from 'express';
+import * as orderService from '../services/order-service';
+import * as validation from '../validations/order-validation';
 
-const prisma = new PrismaClient();
+const catchAsync = (fn: Function) => (req: Request, res: Response, next: NextFunction) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+};
 
-export const createOrder = async (req: Request, res: Response) => {
-    const { customer_id, restaurant_id, item_amount } = req.body;
-    
-    if (!customer_id || !restaurant_id || item_amount === undefined || item_amount <= 0) {
-        return res.status(400).json({ error: 'Customer ID, Restaurant ID, and a positive Item Amount are required.' });
-    }
-
-    try {
-        const estimated_eta = calculateETA(item_amount);
-
-        const order = await prisma.order.create({
-        data: {
-            customer_id: parseInt(customer_id),
-            restaurant_id: parseInt(restaurant_id),
-            item_amount: parseInt(item_amount),
-            estimated_eta: estimated_eta,
-        },
-        include: {
-            customer: { select: { name: true } },
-            restaurant: { select: { name: true } },
-        },
-        });
-
-        res.status(201).json(order);
-    } catch (error) {
-        if ((error as any).code === 'P2003') {
-            return res.status(404).json({ error: 'Customer or Restaurant not found.' });
-        }
-        res.status(500).json({ error: 'Failed to create order.' });
-    }
+// 1. Create new Order
+export const createOrder = catchAsync(async (req: Request, res: Response) => {
+    const rawData = {
+        customer_id: parseInt(req.body.customer_id),
+        restaurant_id: parseInt(req.body.restaurant_id),
+        item_amount: parseInt(req.body.item_amount),
     };
+    
+    const data = validation.createOrderSchema.parse(rawData);
+    const order = await orderService.create(data);
+    res.status(201).json(order);
+});
 
-    export const getOrders = async (req: Request, res: Response) => {
-    const { customer_id, restaurant_id } = req.query;
-    let whereClause = {};
+// 2. Display Orders (All or Filtered)
+export const getOrders = catchAsync(async (req: Request, res: Response) => {
+    const query = validation.filterOrderSchema.parse(req.query);
 
-    if (customer_id) {
-        whereClause = { ...whereClause, customer_id: parseInt(customer_id as string) };
-    }
-    if (restaurant_id) {
-        whereClause = { ...whereClause, restaurant_id: parseInt(restaurant_id as string) };
-    }
+    const customerId = query.customer_id as number | undefined; 
+    const restaurantId = query.restaurant_id as number | undefined; 
 
-    try {
-        const orders = await prisma.order.findMany({
-        where: whereClause,
-        include: {
-            customer: { select: { name: true } },
-            restaurant: { select: { name: true } },
-        },
-        orderBy: { order_time: 'desc' },
-        });
+    const orders = await orderService.findAll(customerId, restaurantId);
+    res.json(orders);
+});
 
-        res.json(orders);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch orders.' });
-    }
-};
-
-export const getOrderById = async (req: Request, res: Response) => {
+// 2. Display Order by ID
+export const getOrderById = catchAsync(async (req: Request, res: Response) => {
     const orderId = parseInt(req.params.id);
-
-    try {
-        const order = await prisma.order.findUnique({
-            where: { id: orderId },
-            include: {
-                customer: { select: { name: true } },
-                restaurant: { select: { name: true } },
-            },
-        });
-
-        if (!order) {
-            return res.status(404).json({ error: 'Order not found.' });
-        }
-        
-        res.json(order);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch order info.' });
-    }
-};
+    const order = await orderService.findById(orderId);
+    res.json(order);
+});
