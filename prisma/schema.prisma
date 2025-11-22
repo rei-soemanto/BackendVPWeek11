@@ -14,47 +14,31 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Customer Model
 model Customer {
   id    Int     @id @default(autoincrement())
   name  String
-  phone String? // Allowing null if not mandatory for every customer
-  
-  // Relationship: One Customer has Many Orders
+  phone String?
   orders Order[]
 }
 
-// Restaurant Model
 model Restaurant {
   id          Int     @id @default(autoincrement())
   name        String
-  description String? // Information to describe what it is [cite: 36]
-  is_open     Boolean @default(true) // Open or closed status [cite: 36]
-  
-  // Relationship: One Restaurant has Many Orders
+  description String?
+  is_open     Boolean @default(true)
   orders Order[]
 }
 
-// Order Model (The Pivot/Junction Table for the many-to-many relationship via orders)
 model Order {
   id            Int      @id @default(autoincrement())
-  order_time    DateTime @default(now()) // Records when they're made [cite: 35]
-  
-  // Items only need to be amount of item [cite: 30]
-  item_amount   Int      // How many items are requested [cite: 35] 
-  
-  // Estimated Time of Arrival calculation logic is in the application layer (API)
-  // but we store the calculated result here.
-  estimated_eta DateTime // Estimated arrival time based on the number of items [cite: 35]
-  
-  // Foreign Key for Customer
+  order_time    DateTime @default(now())
+  item_amount   Int
+  estimated_eta DateTime
   customer_id Int
   customer    Customer @relation(fields: [customer_id], references: [id])
   
-  // Foreign Key for Restaurant
   restaurant_id Int
   restaurant    Restaurant @relation(fields: [restaurant_id], references: [id])
   
-  // Unique index on the combination of customer and restaurant to ensure foreign keys are in the pivot table [cite: 39]
   @@index([customer_id, restaurant_id])
 }

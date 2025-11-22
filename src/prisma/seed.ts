@@ -67,7 +67,7 @@ async function main() {
             restaurant_id: randomRestaurantId,
             item_amount: itemAmount,
             estimated_eta: calculateETA(itemAmount), // Reusing your ETA logic
-            order_time: faker.date.recent({ days: 7 }), // Orders placed in the last week
+            order_time: faker.date.recent({ days: 1 }), // Orders placed in the last week
         },
         });
     }
