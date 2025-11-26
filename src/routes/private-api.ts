@@ -2,6 +2,7 @@ import { Router } from 'express';
 import * as customerController from '../controllers/customer-controller'; 
 import * as restaurantController from '../controllers/restaurant-controller';
 import * as orderController from '../controllers/order-controller';
+import * as seederController from '../controllers/seeder-controller';
 
 const router = Router();
 
@@ -20,5 +21,7 @@ router.delete('/restaurants/:id', restaurantController.deleteRestaurant);
 router.post('/orders', orderController.createOrder);
 router.get('/orders', orderController.getOrders);
 router.get('/orders/:id', orderController.getOrderById);
+
+router.post('/seeders', seederController.createSeeder);
 
 export default router;
