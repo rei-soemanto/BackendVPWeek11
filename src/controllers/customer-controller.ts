@@ -1,10 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import * as customerService from '../services/customer-service';
 import * as validation from '../validations/customer-validation';
-
-const catchAsync = (fn: Function) => (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
-};
+import { catchAsync } from '../utils/async-util';
 
 export const createCustomer = catchAsync(async (req: Request, res: Response) => {
     const data = validation.createCustomerSchema.parse(req.body);

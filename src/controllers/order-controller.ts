@@ -1,10 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import * as orderService from '../services/order-service';
 import * as validation from '../validations/order-validation';
-
-const catchAsync = (fn: Function) => (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
-};
+import { catchAsync } from '../utils/async-util';
 
 export const createOrder = catchAsync(async (req: Request, res: Response) => {
     const rawData = {
