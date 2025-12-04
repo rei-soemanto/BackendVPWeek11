@@ -35,10 +35,10 @@ model Order {
   item_amount   Int
   estimated_eta DateTime
   customer_id Int
-  customer    Customer @relation(fields: [customer_id], references: [id])
+  customer    Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
   
   restaurant_id Int
-  restaurant    Restaurant @relation(fields: [restaurant_id], references: [id])
+  restaurant    Restaurant @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
   
   @@index([customer_id, restaurant_id])
 }
